@@ -122,6 +122,15 @@ jobs:
     - name: Wait for LocalStack to be ready
       run: |
         curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:4566/health
+    
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+    
+    - name: Create S3 bucket in LocalStack
+      run: |
         aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket || echo "Bucket may already exist"
       env:
         AWS_ACCESS_KEY_ID: test
@@ -129,7 +138,7 @@ jobs:
         AWS_DEFAULT_REGION: us-east-1
     
     - name: Run integration tests
-      run: mocha test/**/*.integration.test.ts --require ts-node/register --timeout 30000
+      run: mocha test/integration.test.ts --require ts-node/register --timeout 30000
       env:
         LOCALSTACK_ENDPOINT: http://localhost:4566
         S3_TEST_BUCKET: test-bucket
