@@ -64,49 +64,9 @@ jobs:
         echo "Package successfully published to NPM"
       if: env.SKIP_PUBLISH == 'false'
 
-  publish-github:
-    name: Publish to GitHub Packages
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
-        registry-url: https://npm.pkg.github.com/
-        cache: 'npm'
-    
-    - name: Configure package for GitHub Packages
-      run: |
-        # Create a temporary package.json for GitHub Packages
-        cp package.json package.json.backup
-        REPO_OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
-        jq --arg owner "$REPO_OWNER" '.name = "@" + $owner + "/cacheman-s3"' package.json > package.json.tmp
-        mv package.json.tmp package.json
-        jq '.publishConfig = {"registry": "https://npm.pkg.github.com/"}' package.json > package.json.tmp
-        mv package.json.tmp package.json
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build TypeScript
-      run: npm run build
-    
-    - name: Publish to GitHub Packages
-      run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Restore original package.json
-      run: mv package.json.backup package.json
-      if: always()
-
   create-release-assets:
     name: Create Release Assets
-    needs: [publish-npm, publish-github]
+    needs: [publish-npm]
     runs-on: ubuntu-latest
     
     steps:
@@ -161,7 +121,7 @@ jobs:
 
   notify-success:
     name: Notify Success
-    needs: [publish-npm, publish-github, create-release-assets]
+    needs: [publish-npm, create-release-assets]
     runs-on: ubuntu-latest
     if: success()
     
@@ -182,7 +142,6 @@ jobs:
         
         ## 📦 Published to:
         - **NPM Registry:** [npmjs.com/package/${{ env.PACKAGE_NAME }}](https://www.npmjs.com/package/${{ env.PACKAGE_NAME }})
-        - **GitHub Packages:** [GitHub Packages](https://github.com/${{ github.repository }}/packages)
         
         ## 🔧 Installation:
         \`\`\`bash
@@ -201,7 +160,7 @@ jobs:
     
   notify-failure:
     name: Notify Failure
-    needs: [publish-npm, publish-github, create-release-assets]
+    needs: [publish-npm, create-release-assets]
     runs-on: ubuntu-latest
     if: failure()
     
