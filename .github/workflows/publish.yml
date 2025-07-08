@@ -83,7 +83,8 @@ jobs:
       run: |
         # Create a temporary package.json for GitHub Packages
         cp package.json package.json.backup
-        jq '.name = "@dragonxsx/cacheman-s3"' package.json > package.json.tmp
+        REPO_OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
+        jq --arg owner "$REPO_OWNER" '.name = "@" + $owner + "/cacheman-s3"' package.json > package.json.tmp
         mv package.json.tmp package.json
         jq '.publishConfig = {"registry": "https://npm.pkg.github.com/"}' package.json > package.json.tmp
         mv package.json.tmp package.json
