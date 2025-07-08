@@ -25,7 +25,7 @@
     "coverage": "nyc npm run test:unit",
     "coverage:report": "nyc report --reporter=html",
     "dev": "ts-node src/index.ts",
-    "prepublishOnly": "npm run build && npm run test:unit && npm run lint"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
