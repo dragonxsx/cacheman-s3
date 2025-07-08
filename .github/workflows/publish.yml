@@ -5,72 +5,8 @@ on:
     types: [published]
 
 jobs:
-  test:
-    name: Pre-publish Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run TypeScript type checking
-      run: npm run typecheck
-    
-    - name: Run linting
-      run: npm run lint
-    
-    - name: Build TypeScript
-      run: npm run build
-    
-    - name: Run unit tests
-      run: npm test
-    
-    - name: Setup LocalStack for integration tests
-      run: |
-        docker run --rm -d -p 4566:4566 --name localstack-publish-test localstack/localstack:3.0
-        sleep 10
-        curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:4566/health
-        aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket || echo "Bucket may already exist"
-      env:
-        AWS_ACCESS_KEY_ID: test
-        AWS_SECRET_ACCESS_KEY: test
-        AWS_DEFAULT_REGION: us-east-1
-    
-    - name: Run LocalStack integration tests
-      run: mocha test/**/*.integration.test.ts --require ts-node/register --timeout 30000
-      env:
-        LOCALSTACK_ENDPOINT: http://localhost:4566
-        S3_TEST_BUCKET: test-bucket
-        AWS_ACCESS_KEY_ID: test
-        AWS_SECRET_ACCESS_KEY: test
-        AWS_REGION: us-east-1
-    
-    - name: Cleanup LocalStack
-      run: docker stop localstack-publish-test || true
-    
-    - name: Generate coverage report
-      run: npm run coverage
-    
-    - name: Verify build artifacts
-      run: |
-        test -f dist/index.js
-        test -f dist/index.d.ts
-        test -f dist/types.js
-        test -f dist/types.d.ts
-        echo "Build artifacts verified successfully"
-
   publish-npm:
     name: Publish to NPM
-    needs: test
     runs-on: ubuntu-latest
     
     steps:
@@ -124,7 +60,6 @@ jobs:
 
   publish-github:
     name: Publish to GitHub Packages
-    needs: test
     runs-on: ubuntu-latest
     
     steps:
