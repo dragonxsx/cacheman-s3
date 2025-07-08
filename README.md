@@ -1,4 +1,4 @@
-# cacheman-s3
+# @banana.inc/cacheman-s3
 
 [![Build Status](https://github.com/dragonxsx/cacheman-s3/workflows/CI/badge.svg)](https://github.com/dragonxsx/cacheman-s3/actions)
 [![NPM version](https://badge.fury.io/js/cacheman-s3.svg)](http://badge.fury.io/js/cacheman-s3)
@@ -22,7 +22,7 @@ TypeScript-first AWS S3 caching library for Node.JS and cache engine for [cachem
 ## Installation
 
 ```bash
-npm install cacheman-s3
+npm install @banana.inc/cacheman-s3
 ```
 
 ## Quick Start
@@ -30,7 +30,7 @@ npm install cacheman-s3
 ### TypeScript
 
 ```typescript
-import { S3Store } from 'cacheman-s3';
+import { S3Store } from '@banana.inc/cacheman-s3';
 
 interface User {
   id: number;
@@ -75,7 +75,7 @@ cache.set('user:123', {
 ### JavaScript
 
 ```javascript
-const { S3Store } = require('cacheman-s3');
+const { S3Store } = require('@banana.inc/cacheman-s3');
 
 const cache = new S3Store({
   bucket: 'my-cache-bucket',
@@ -98,7 +98,7 @@ cache.set('user:123', { name: 'John', age: 30 }, 3600, function(err) {
 
 ```typescript
 import Cacheman from 'cacheman';
-import { S3Store } from 'cacheman-s3';
+import { S3Store } from '@banana.inc/cacheman-s3';
 
 interface CacheData {
   id: string;
@@ -135,7 +135,7 @@ cache.set('profile:123', {
 ### Basic Configuration
 
 ```typescript
-import { S3Store, S3StoreOptions } from 'cacheman-s3';
+import { S3Store, S3StoreOptions } from '@banana.inc/cacheman-s3';
 
 const options: S3StoreOptions = {
   // Required
@@ -436,7 +436,7 @@ userCache.set('user:123', {
 ### Utility Functions
 
 ```typescript
-import { S3Store, isValidTTL, isDefined } from 'cacheman-s3';
+import { S3Store, isValidTTL, isDefined } from '@banana.inc/cacheman-s3';
 
 // Type-safe cache wrapper
 class TypedCache<T extends { id: string }> {
@@ -608,7 +608,7 @@ docker stop localstack-s3-test
 #### Using LocalStack in Your Code
 
 ```typescript
-import { S3Store } from 'cacheman-s3';
+import { S3Store } from '@banana.inc/cacheman-s3';
 
 // Configure S3Store for LocalStack
 const cache = new S3Store({
