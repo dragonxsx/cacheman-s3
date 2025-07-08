@@ -57,11 +57,6 @@ temp/
 .aws/
 credentials
 
-# Package manager files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
 # ESLint cache
 .eslintcache
 
