@@ -130,7 +130,7 @@ jobs:
         echo "Running integration tests..."
         npm run test:integration:ci
       env:
-        LOCALSTACK_ENDPOINT: http://localhost:4566
+        LOCALSTACK_ENDPOINT: http://127.0.0.1:4566
         S3_TEST_BUCKET: test-bucket
         AWS_ACCESS_KEY_ID: test
         AWS_SECRET_ACCESS_KEY: test
