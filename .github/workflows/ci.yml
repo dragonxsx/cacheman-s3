@@ -82,18 +82,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
     
-    services:
-      localstack:
-        image: localstack/localstack:3.0
-        ports:
-          - 4566:4566
-        env:
-          DEBUG: 1
-          PERSISTENCE: 0
-          AWS_DEFAULT_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: test
-          AWS_SECRET_ACCESS_KEY: test
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -119,26 +107,28 @@ jobs:
       run: npm run build
       if: steps.cache-build.outputs.cache-hit != 'true'
     
-    - name: Wait for LocalStack to be ready
-      run: |
-        curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:4566/health
-    
-    - name: Install AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install
+    - name: Start LocalStack
+      uses: LocalStack/setup-localstack@v0.2.2
+      with:
+        image-tag: 'latest'
+        install-awslocal: 'true'
+        configuration: DEBUG=1,SERVICES=s3
     
     - name: Create S3 bucket in LocalStack
       run: |
-        aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket || echo "Bucket may already exist"
+        echo "Creating S3 bucket in LocalStack..."
+        awslocal s3 mb s3://test-bucket || echo "Bucket may already exist"
+        
+        # Verify bucket was created
+        echo "Verifying bucket creation..."
+        awslocal s3 ls
       env:
-        AWS_ACCESS_KEY_ID: test
-        AWS_SECRET_ACCESS_KEY: test
         AWS_DEFAULT_REGION: us-east-1
     
     - name: Run integration tests
-      run: npm run test:integration:ci
+      run: |
+        echo "Running integration tests..."
+        npm run test:integration:ci
       env:
         LOCALSTACK_ENDPOINT: http://localhost:4566
         S3_TEST_BUCKET: test-bucket
