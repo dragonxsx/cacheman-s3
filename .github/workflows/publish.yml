@@ -41,7 +41,7 @@ jobs:
       run: |
         PACKAGE_VERSION=$(node -p "require('./package.json').version")
         echo "Checking if version $PACKAGE_VERSION exists on NPM..."
-        if npm view cacheman-s3@$PACKAGE_VERSION version 2>/dev/null; then
+        if npm view @banana.inc/cacheman-s3@$PACKAGE_VERSION version 2>/dev/null; then
           echo "⚠️ Version $PACKAGE_VERSION already exists on NPM. Skipping publish step."
           echo "SKIP_PUBLISH=true" >> $GITHUB_ENV
         else
@@ -60,7 +60,7 @@ jobs:
         PACKAGE_VERSION=$(node -p "require('./package.json').version")
         echo "Waiting for package to be available on NPM..."
         sleep 30
-        npm view cacheman-s3@$PACKAGE_VERSION
+        npm view @banana.inc/cacheman-s3@$PACKAGE_VERSION
         echo "Package successfully published to NPM"
       if: env.SKIP_PUBLISH == 'false'
 
@@ -168,7 +168,7 @@ jobs:
     - name: Get package info
       run: |
         echo "PACKAGE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-        echo "PACKAGE_NAME=cacheman-s3" >> $GITHUB_ENV
+        echo "PACKAGE_NAME=@banana.inc/cacheman-s3" >> $GITHUB_ENV
     
     - name: Create success summary
       run: |

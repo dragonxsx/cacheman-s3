@@ -1,5 +1,5 @@
 {
-  "name": "cacheman-s3",
+  "name": "@banana.inc/cacheman-s3",
   "version": "1.0.0",
   "description": "AWS S3 cache engine for cacheman",
   "author": "Long <dragon.sunshine@gmail.com>",
