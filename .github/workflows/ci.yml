@@ -1,0 +1,175 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run TypeScript type checking
+      run: npm run typecheck
+    
+    - name: Run ESLint
+      run: npm run lint
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Cache build artifacts
+      uses: actions/cache@v3
+      with:
+        path: dist/
+        key: build-${{ github.sha }}
+        restore-keys: build-
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Restore build artifacts
+      id: cache-build
+      uses: actions/cache@v3
+      with:
+        path: dist/
+        key: build-${{ github.sha }}
+        restore-keys: build-
+    
+    - name: Build TypeScript (fallback)
+      run: npm run build
+      if: steps.cache-build.outputs.cache-hit != 'true'
+    
+    - name: Run unit tests
+      run: npm run test:unit
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    
+    services:
+      localstack:
+        image: localstack/localstack:3.0
+        ports:
+          - 4566:4566
+        env:
+          DEBUG: 1
+          PERSISTENCE: 0
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Restore build artifacts
+      id: cache-build
+      uses: actions/cache@v3
+      with:
+        path: dist/
+        key: build-${{ github.sha }}
+        restore-keys: build-
+    
+    - name: Build TypeScript (fallback)
+      run: npm run build
+      if: steps.cache-build.outputs.cache-hit != 'true'
+    
+    - name: Wait for LocalStack to be ready
+      run: |
+        curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:4566/health
+        aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket || echo "Bucket may already exist"
+      env:
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_DEFAULT_REGION: us-east-1
+    
+    - name: Run integration tests
+      run: mocha test/**/*.integration.test.ts --require ts-node/register --timeout 30000
+      env:
+        LOCALSTACK_ENDPOINT: http://localhost:4566
+        S3_TEST_BUCKET: test-bucket
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_REGION: us-east-1
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+    
+    - name: Check for known vulnerabilities
+      run: npm audit --json --audit-level=moderate | jq -r '.vulnerabilities | length' | xargs -I {} sh -c 'if [ {} -gt 0 ]; then echo "Found {} vulnerabilities"; exit 1; fi'
+    
+    - name: Check for outdated dependencies
+      run: npm outdated --depth=0 || true
+
+  all-tests:
+    name: All Tests Status
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-scan]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    
+    steps:
+    - name: All tests completed
+      run: echo "All tests have completed successfully"

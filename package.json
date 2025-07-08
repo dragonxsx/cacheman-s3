@@ -1,0 +1,106 @@
+{
+  "name": "cacheman-s3",
+  "version": "1.0.0",
+  "description": "AWS S3 cache engine for cacheman",
+  "author": "Long <dragon.sunshine@gmail.com>",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prepack": "npm run build",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "mocha test/**/*.test.ts --require ts-node/register --timeout 10000",
+    "test:integration": "npm run localstack:start && LOCALSTACK_ENDPOINT=http://localhost:4566 S3_TEST_BUCKET=test-bucket AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_REGION=us-east-1 mocha test/**/*.integration.test.ts --require ts-node/register --timeout 30000 && npm run localstack:stop",
+    "localstack:start": "docker compose -f docker-compose.localstack.yml up -d",
+    "localstack:stop": "docker compose -f docker-compose.localstack.yml down",
+    "localstack:logs": "docker compose -f docker-compose.localstack.yml logs",
+    "localstack:setup": "./scripts/setup-localstack.sh",
+    "lint": "eslint src/ test/ --ext .ts",
+    "lint:fix": "eslint src/ test/ --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "coverage": "nyc npm run test:unit",
+    "coverage:report": "nyc report --reporter=html",
+    "dev": "ts-node src/index.ts",
+    "prepublishOnly": "npm run build && npm run test:unit && npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dragonxsx/cacheman-s3.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dragonxsx/cacheman-s3/issues"
+  },
+  "homepage": "https://github.com/dragonxsx/cacheman-s3#readme",
+  "keywords": [
+    "cache",
+    "s3",
+    "aws",
+    "caching",
+    "store",
+    "ttl",
+    "cacheman",
+    "amazon",
+    "cloud",
+    "node",
+    "javascript",
+    "typescript",
+    "type-safe"
+  ],
+  "license": "MIT",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">= 14.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.100.0",
+    "sanitize-filename": "^1.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/mocha": "^10.0.0",
+    "@types/sinon": "^17.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "mocha": "^10.0.0",
+    "nyc": "^15.1.0",
+    "sinon": "^17.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "exclude": [
+      "**/*.d.ts",
+      "test/",
+      "dist/"
+    ],
+    "reporter": [
+      "text",
+      "lcov"
+    ],
+    "all": true
+  },
+  "mocha": {
+    "require": [
+      "ts-node/register"
+    ],
+    "extensions": [
+      "ts"
+    ],
+    "spec": [
+      "test/**/*.test.ts"
+    ],
+    "timeout": 10000
+  }
+}

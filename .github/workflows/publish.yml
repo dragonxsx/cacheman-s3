@@ -1,0 +1,283 @@
+name: Publish Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    name: Pre-publish Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run TypeScript type checking
+      run: npm run typecheck
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Run unit tests
+      run: npm test
+    
+    - name: Setup LocalStack for integration tests
+      run: |
+        docker run --rm -d -p 4566:4566 --name localstack-publish-test localstack/localstack:3.0
+        sleep 10
+        curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:4566/health
+        aws --endpoint-url=http://localhost:4566 s3 mb s3://test-bucket || echo "Bucket may already exist"
+      env:
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_DEFAULT_REGION: us-east-1
+    
+    - name: Run LocalStack integration tests
+      run: mocha test/**/*.integration.test.ts --require ts-node/register --timeout 30000
+      env:
+        LOCALSTACK_ENDPOINT: http://localhost:4566
+        S3_TEST_BUCKET: test-bucket
+        AWS_ACCESS_KEY_ID: test
+        AWS_SECRET_ACCESS_KEY: test
+        AWS_REGION: us-east-1
+    
+    - name: Cleanup LocalStack
+      run: docker stop localstack-publish-test || true
+    
+    - name: Generate coverage report
+      run: npm run coverage
+    
+    - name: Verify build artifacts
+      run: |
+        test -f dist/index.js
+        test -f dist/index.d.ts
+        test -f dist/types.js
+        test -f dist/types.d.ts
+        echo "Build artifacts verified successfully"
+
+  publish-npm:
+    name: Publish to NPM
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        registry-url: https://registry.npmjs.org/
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Verify package version matches release tag
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        RELEASE_TAG=${GITHUB_REF#refs/tags/}
+        echo "Package version: $PACKAGE_VERSION"
+        echo "Release tag: $RELEASE_TAG"
+        if [ "v$PACKAGE_VERSION" != "$RELEASE_TAG" ]; then
+          echo "Version mismatch: package.json version ($PACKAGE_VERSION) does not match release tag ($RELEASE_TAG)"
+          exit 1
+        fi
+    
+    - name: Check if version already exists on NPM
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        if npm view cacheman-s3@$PACKAGE_VERSION version 2>/dev/null; then
+          echo "Version $PACKAGE_VERSION already exists on NPM"
+          exit 1
+        fi
+    
+    - name: Publish to NPM
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    
+    - name: Verify publication
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        echo "Waiting for package to be available on NPM..."
+        sleep 30
+        npm view cacheman-s3@$PACKAGE_VERSION
+        echo "Package successfully published to NPM"
+
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        registry-url: https://npm.pkg.github.com/
+        cache: 'npm'
+    
+    - name: Configure package for GitHub Packages
+      run: |
+        # Create a temporary package.json for GitHub Packages
+        cp package.json package.json.backup
+        jq '.name = "@dragonxsx/cacheman-s3"' package.json > package.json.tmp
+        mv package.json.tmp package.json
+        jq '.publishConfig = {"registry": "https://npm.pkg.github.com/"}' package.json > package.json.tmp
+        mv package.json.tmp package.json
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Restore original package.json
+      run: mv package.json.backup package.json
+      if: always()
+
+  create-release-assets:
+    name: Create Release Assets
+    needs: [publish-npm, publish-github]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build TypeScript
+      run: npm run build
+    
+    - name: Create tarball
+      run: npm pack
+    
+    - name: Generate checksums
+      run: |
+        TARBALL=$(ls cacheman-s3-*.tgz)
+        sha256sum "$TARBALL" > "$TARBALL.sha256"
+        md5sum "$TARBALL" > "$TARBALL.md5"
+    
+    - name: Create build info
+      run: |
+        cat > build-info.json << EOF
+        {
+          "version": "$(node -p 'require("./package.json").version')",
+          "node_version": "$(node --version)",
+          "npm_version": "$(npm --version)",
+          "build_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "git_commit": "$GITHUB_SHA",
+          "git_ref": "$GITHUB_REF"
+        }
+        EOF
+    
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          cacheman-s3-*.tgz
+          cacheman-s3-*.tgz.sha256
+          cacheman-s3-*.tgz.md5
+          build-info.json
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify-success:
+    name: Notify Success
+    needs: [publish-npm, publish-github, create-release-assets]
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: Get package info
+      run: |
+        echo "PACKAGE_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        echo "PACKAGE_NAME=cacheman-s3" >> $GITHUB_ENV
+    
+    - name: Create success summary
+      run: |
+        cat > $GITHUB_STEP_SUMMARY << EOF
+        # ✅ Package Published Successfully
+        
+        **Package:** \`${{ env.PACKAGE_NAME }}\`  
+        **Version:** \`${{ env.PACKAGE_VERSION }}\`  
+        **Release:** [${{ github.ref_name }}](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }})
+        
+        ## 📦 Published to:
+        - **NPM Registry:** [npmjs.com/package/${{ env.PACKAGE_NAME }}](https://www.npmjs.com/package/${{ env.PACKAGE_NAME }})
+        - **GitHub Packages:** [GitHub Packages](https://github.com/${{ github.repository }}/packages)
+        
+        ## 🔧 Installation:
+        \`\`\`bash
+        npm install ${{ env.PACKAGE_NAME }}@${{ env.PACKAGE_VERSION }}
+        \`\`\`
+        
+        ## ⚡ Usage:
+        \`\`\`typescript
+        import { S3Store } from '${{ env.PACKAGE_NAME }}';
+        
+        const cache = new S3Store({
+          bucket: 'your-s3-bucket'
+        });
+        \`\`\`
+        EOF
+    
+  notify-failure:
+    name: Notify Failure
+    needs: [publish-npm, publish-github, create-release-assets]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+    - name: Create failure summary
+      run: |
+        cat > $GITHUB_STEP_SUMMARY << EOF
+        # ❌ Package Publication Failed
+        
+        **Package:** \`cacheman-s3\`  
+        **Version:** \`${GITHUB_REF#refs/tags/v}\`  
+        **Release:** [${{ github.ref_name }}](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }})
+        
+        ## 🔍 Check the following:
+        - [ ] NPM authentication token (\`NPM_TOKEN\` secret)
+        - [ ] Package version conflicts
+        - [ ] Build artifacts generation
+        - [ ] Test results
+        
+        Please review the [failed workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+        EOF

@@ -1,0 +1,26 @@
+services:
+  localstack:
+    container_name: localstack-s3-test
+    image: localstack/localstack:3.0
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DEBUG=${DEBUG:-0}
+      - SERVICES=s3
+      - DATA_DIR=/var/lib/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - TMPDIR=/var/lib/localstack/tmp
+      - LOCALSTACK_VOLUME_DIR=/var/lib/localstack
+    volumes:
+      - "localstack-data:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  localstack-data:

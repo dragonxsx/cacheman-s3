@@ -1,0 +1,194 @@
+# Source control
+.git/
+.gitignore
+.gitattributes
+
+# Source files (we ship dist/ instead)
+src/
+tsconfig.json
+
+# Dependencies
+node_modules/
+
+# Testing
+test/
+coverage/
+.nyc_output
+*.test.*
+*.spec.*
+
+# Development files
+.eslintrc.js
+.eslintcache
+*.config.js
+*.config.ts
+
+# CI/CD
+.travis.yml
+.github/
+.circleci/
+.gitlab-ci.yml
+appveyor.yml
+
+# Environment files
+.env*
+.environment
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Documentation source (keep README.md)
+docs/
+*.md
+!README.md
+
+# Development dependencies
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts we don't want to ship
+*.tsbuildinfo
+
+# TypeScript source maps (optional - comment out if you want to ship them)
+*.map
+
+# Test output
+test-results/
+test-reports/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+
+# Local development files
+.local/
+local/
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Snowpack dependency directory (https://snowpack.dev/)
+web_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# AWS credentials
+.aws/
+credentials
+
+# Benchmarks
+benchmarks/
+benchmark.js
+
+# Examples that shouldn't be shipped
+examples/
+example.js
+
+# Scripts that shouldn't be shipped
+scripts/
+
+# Linting configuration
+.eslintrc*
+.prettierrc*
+
+# Editor configuration
+.editorconfig
+
+# Changelog drafts
+CHANGELOG.draft.md
+
+# Performance monitoring
+.nyc_output
