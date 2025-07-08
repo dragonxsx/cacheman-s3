@@ -40,13 +40,18 @@ jobs:
     - name: Check if version already exists on NPM
       run: |
         PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        echo "Checking if version $PACKAGE_VERSION exists on NPM..."
         if npm view cacheman-s3@$PACKAGE_VERSION version 2>/dev/null; then
-          echo "Version $PACKAGE_VERSION already exists on NPM"
-          exit 1
+          echo "⚠️ Version $PACKAGE_VERSION already exists on NPM. Skipping publish step."
+          echo "SKIP_PUBLISH=true" >> $GITHUB_ENV
+        else
+          echo "✅ Version $PACKAGE_VERSION is new. Proceeding with publish."
+          echo "SKIP_PUBLISH=false" >> $GITHUB_ENV
         fi
     
     - name: Publish to NPM
       run: npm publish
+      if: env.SKIP_PUBLISH == 'false'
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     
@@ -57,6 +62,7 @@ jobs:
         sleep 30
         npm view cacheman-s3@$PACKAGE_VERSION
         echo "Package successfully published to NPM"
+      if: env.SKIP_PUBLISH == 'false'
 
   publish-github:
     name: Publish to GitHub Packages
