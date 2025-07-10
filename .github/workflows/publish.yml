@@ -64,64 +64,9 @@ jobs:
         echo "Package successfully published to NPM"
       if: env.SKIP_PUBLISH == 'false'
 
-  create-release-assets:
-    name: Create Release Assets
-    needs: [publish-npm]
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build TypeScript
-      run: npm run build
-    
-    - name: Create tarball
-      run: npm pack
-    
-    - name: Generate checksums
-      run: |
-        TARBALL=$(ls *.tgz)
-        sha256sum "$TARBALL" > "$TARBALL.sha256"
-        md5sum "$TARBALL" > "$TARBALL.md5"
-    
-    - name: Create build info
-      run: |
-        cat > build-info.json << EOF
-        {
-          "version": "$(node -p 'require("./package.json").version')",
-          "node_version": "$(node --version)",
-          "npm_version": "$(npm --version)",
-          "build_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-          "git_commit": "$GITHUB_SHA",
-          "git_ref": "$GITHUB_REF"
-        }
-        EOF
-    
-    - name: Upload release assets
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          *.tgz
-          *.tgz.sha256
-          *.tgz.md5
-          build-info.json
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   notify-success:
     name: Notify Success
-    needs: [publish-npm, create-release-assets]
+    needs: [publish-npm]
     runs-on: ubuntu-latest
     if: success()
     
@@ -160,7 +105,7 @@ jobs:
     
   notify-failure:
     name: Notify Failure
-    needs: [publish-npm, create-release-assets]
+    needs: [publish-npm]
     runs-on: ubuntu-latest
     if: failure()
     
