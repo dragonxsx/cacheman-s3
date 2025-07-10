@@ -81,7 +81,7 @@ export class S3Store<T = unknown> {
     const processed: ProcessedS3StoreOptions = {
       bucket: options.bucket,
       region: options.region ?? 'us-east-1',
-      prefix: options.prefix ?? 'cacheman:',
+      prefix: options.prefix ?? '',
       defaultTtl: options.defaultTtl ?? 60,
       maxRetries: options.maxRetries ?? 3,
       httpTimeout: options.httpTimeout ?? 30000,

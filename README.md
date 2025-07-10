@@ -18,6 +18,7 @@ TypeScript-first AWS S3 caching library for Node.JS and cache engine for [cachem
 - 🌐 **AWS Integration**: Full AWS SDK v3 compatibility with LocalStack support
 - 📞 **Callback API**: Traditional Node.js callback patterns with TypeScript typing
 - 🎯 **Generic Support**: Type-safe caching for any data structure
+- 📁 **Hierarchical Keys**: Native support for slash-separated cache keys creating S3 object paths
 
 ## Installation
 
@@ -385,6 +386,43 @@ class TTLError extends S3StoreError {}
 ```
 
 ## Advanced Usage
+
+### Hierarchical Cache Keys
+
+S3Store supports hierarchical cache keys using forward slashes, which are preserved as S3 object paths:
+
+```typescript
+const cache = new S3Store<any>({
+  bucket: 'my-cache-bucket',
+  prefix: 'app:'
+});
+
+// These create nested S3 object paths
+cache.set('users/123/profile', { name: 'John' }, (error) => {
+  // Creates S3 object: app:users/123/profile
+});
+
+cache.set('products/electronics/laptops/456', { name: 'MacBook' }, (error) => {
+  // Creates S3 object: app:products/electronics/laptops/456
+});
+
+cache.set('api/v1/cache/session/abc123', { userId: 789 }, (error) => {
+  // Creates S3 object: app:api/v1/cache/session/abc123
+});
+
+// Retrieve using the same hierarchical key
+cache.get('users/123/profile', (error, profile) => {
+  if (profile) {
+    console.log('User profile:', profile);
+  }
+});
+```
+
+This allows for:
+- **Organized Data**: Logical grouping of related cache entries
+- **S3 Console Navigation**: Browse cache structure in AWS S3 console
+- **Prefix-based Operations**: Efficient scanning and clearing of key groups
+- **Natural Hierarchies**: Mirror your application's data structure
 
 ### Generic Type Constraints
 

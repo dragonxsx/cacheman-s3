@@ -90,7 +90,7 @@ jobs:
     
     - name: Generate checksums
       run: |
-        TARBALL=$(ls cacheman-s3-*.tgz)
+        TARBALL=$(ls *.tgz)
         sha256sum "$TARBALL" > "$TARBALL.sha256"
         md5sum "$TARBALL" > "$TARBALL.md5"
     
@@ -111,9 +111,9 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          cacheman-s3-*.tgz
-          cacheman-s3-*.tgz.sha256
-          cacheman-s3-*.tgz.md5
+          *.tgz
+          *.tgz.sha256
+          *.tgz.md5
           build-info.json
         generate_release_notes: true
       env:
