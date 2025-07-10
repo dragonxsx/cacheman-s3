@@ -1,6 +1,6 @@
 {
   "name": "@banana.inc/cacheman-s3",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "AWS S3 cache engine for cacheman",
   "author": "Long Nguyen <dragon.sunshine@gmail.com>",
   "main": "dist/index.js",

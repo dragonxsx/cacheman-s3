@@ -3,6 +3,7 @@ name: Publish Package
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   publish-npm:
@@ -47,6 +48,13 @@ jobs:
         else
           echo "✅ Version $PACKAGE_VERSION is new. Proceeding with publish."
           echo "SKIP_PUBLISH=false" >> $GITHUB_ENV
+        fi
+        
+        # Additional check: if release was created by github-actions bot, skip
+        RELEASE_AUTHOR="${{ github.event.release.author.login }}"
+        if [ "$RELEASE_AUTHOR" = "github-actions[bot]" ]; then
+          echo "⚠️ Release was created by auto-release workflow. Skipping duplicate publish."
+          echo "SKIP_PUBLISH=true" >> $GITHUB_ENV
         fi
     
     - name: Publish to NPM
