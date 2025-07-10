@@ -1,7 +1,7 @@
 # @banana.inc/cacheman-s3
 
 [![Build Status](https://github.com/dragonxsx/cacheman-s3/workflows/CI/badge.svg)](https://github.com/dragonxsx/cacheman-s3/actions)
-[![NPM version](https://badge.fury.io/js/cacheman-s3.svg)](http://badge.fury.io/js/cacheman-s3)
+[![NPM version](https://badge.fury.io/js/@banana.inc%2Fcacheman-s3.svg)](http://badge.fury.io/js/@banana.inc%2Fcacheman-s3)
 [![Coverage Status](https://codecov.io/gh/dragonxsx/cacheman-s3/branch/main/graph/badge.svg)](https://codecov.io/gh/dragonxsx/cacheman-s3)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 

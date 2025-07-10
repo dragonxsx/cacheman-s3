@@ -42,6 +42,11 @@ import {
 const noop = (): void => {};
 
 /**
+ * Placeholder for slashes in cache keys
+ */
+const SLASH_PLACEHOLDER = '__SLASH__';
+
+/**
  * Type-safe S3Store class for caching operations
  */
 export class S3Store<T = unknown> {
@@ -168,8 +173,12 @@ export class S3Store<T = unknown> {
       throw new ConfigurationError('Cache key must be a non-empty string');
     }
 
-    const sanitized = sanitize(key.toString());
-    return `${this.config.prefix}${encodeURIComponent(sanitized)}` as CacheKey;
+    const keyWithPlaceholders = key.toString().replace(/\//g, SLASH_PLACEHOLDER);
+    const sanitized = sanitize(keyWithPlaceholders);
+    const encoded = encodeURIComponent(sanitized);
+    const withSlashes = encoded.replace(new RegExp(encodeURIComponent(SLASH_PLACEHOLDER), 'g'), '/');
+
+    return `${this.config.prefix}${withSlashes}` as CacheKey;
   }
 
   /**
@@ -480,7 +489,14 @@ export class S3Store<T = unknown> {
       actualCallback = callback;
     }
 
-    const prefix = actualPattern ? `${this.config.prefix}${encodeURIComponent(sanitize(actualPattern))}` : this.config.prefix;
+    let prefix = this.config.prefix;
+    if (actualPattern) {
+      const patternWithPlaceholders = actualPattern.replace(/\//g, SLASH_PLACEHOLDER);
+      const sanitized = sanitize(patternWithPlaceholders);
+      const encoded = encodeURIComponent(sanitized);
+      const withSlashes = encoded.replace(new RegExp(encodeURIComponent(SLASH_PLACEHOLDER), 'g'), '/');
+      prefix = `${this.config.prefix}${withSlashes}`;
+    }
 
     const command = new ListObjectsV2Command({
       Bucket: this.config.bucket,

@@ -272,6 +272,35 @@ describe('cacheman-s3 TypeScript', function() {
         });
       });
     });
+
+    it('should handle cache keys with slash characters', function(done) {
+      const testData: TestData = {
+        id: 1000,
+        name: 'Slash Test User',
+        active: true,
+        meta: {
+          tags: ['path', 'test'],
+          score: 85
+        }
+      };
+
+      const keyWithSlashes = 'users/profile/1000';
+
+      cache.set(keyWithSlashes, testData, (error) => {
+        if (error) return done(error);
+
+        cache.get(keyWithSlashes, (error, data) => {
+          if (error) return done(error);
+          assert.deepStrictEqual(data, testData);
+
+          // Verify the formatted key preserves slashes
+          const formattedKey = (cache as any).formatKey(keyWithSlashes);
+          assert.ok(formattedKey.includes('/'));
+          assert.ok(formattedKey.includes('users/profile/1000'));
+          done();
+        });
+      });
+    });
   });
 
   describe('TTL functionality with type safety', function() {
@@ -464,6 +493,26 @@ describe('cacheman-s3 TypeScript', function() {
           if (error) return done(error);
           assert.ok(result);
           assert.ok(Array.isArray(result.entries));
+          done();
+        });
+      });
+    });
+
+    it('should handle scan with slash characters in keys', function(done) {
+      const testData: TestData = { id: 13, name: 'Slash Scan Test', active: true };
+      const keyWithSlashes = 'api/v1/users/13';
+
+      cache.set(keyWithSlashes, testData, (error) => {
+        if (error) return done(error);
+
+        cache.scan('', 10, (error, result) => {
+          if (error) return done(error);
+          assert.ok(result);
+
+          // Find the entry with slash characters
+          const slashEntry = result.entries.find(entry => entry.key === keyWithSlashes);
+          assert.ok(slashEntry, 'Should find entry with slash characters');
+          assert.deepStrictEqual(slashEntry?.data, testData);
           done();
         });
       });
