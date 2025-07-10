@@ -138,7 +138,7 @@ describe('cacheman-s3 TypeScript', function() {
       // Access private config through type assertion for testing
       const config = (store as any).config;
       assert.strictEqual(config.bucket, 'my-bucket');
-      assert.strictEqual(config.prefix, 'cacheman:');
+      assert.strictEqual(config.prefix, '');
       assert.strictEqual(config.defaultTtl, 60);
     });
 
